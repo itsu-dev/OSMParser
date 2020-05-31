@@ -1,4 +1,4 @@
-package dev.itsu.urbandeveloper.osm.model
+package dev.itsu.osmparser.model
 
 data class Way(
         val id: Long,
@@ -8,6 +8,6 @@ data class Way(
         val timeStamp: String,
         val user: User
 ) {
-    val tags = mutableListOf<Tag>()
+    val tags = mutableMapOf<String, Tag>()
     val nds = mutableListOf<Nd>()
 }

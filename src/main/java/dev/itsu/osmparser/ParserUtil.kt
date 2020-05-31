@@ -1,13 +1,28 @@
-package dev.itsu.urbandeveloper.osm
+package dev.itsu.osmparser
 
 import kotlin.math.*
 
 object ParserUtil {
 
-    fun worldPosXY(longitude: Double, latitude: Double): Array<Double> {
-        val x = (longitude + 180.0) / 360.0 * (1 shl 8)
-        val y = ((1.0 - log(tan(latitude * PI / 180.0) + 1.0 / cos(latitude * PI / 180.0), E) / PI) / 2.0 * (1 shl 8))
-        return arrayOf(x, y)
+    fun getXYTile(lat : Double, lon: Double, zoom : Int) : Pair<Int, Int> {
+        val latRad = Math.toRadians(lat)
+        var xtile = floor( (lon + 180) / 360 * (1 shl zoom) ).toInt()
+        var ytile = floor( (1.0 - asinh(tan(latRad)) / PI) / 2 * (1 shl zoom) ).toInt()
+
+        if (xtile < 0) {
+            xtile = 0
+        }
+        if (xtile >= (1 shl zoom)) {
+            xtile= (1 shl zoom) - 1
+        }
+        if (ytile < 0) {
+            ytile = 0
+        }
+        if (ytile >= (1 shl zoom)) {
+            ytile = (1 shl zoom) - 1
+        }
+
+        return Pair(xtile, ytile)
     }
 
 

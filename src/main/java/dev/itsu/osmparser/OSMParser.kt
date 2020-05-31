@@ -1,6 +1,7 @@
-package dev.itsu.urbandeveloper.osm
+package dev.itsu.osmparser
 
-import dev.itsu.urbandeveloper.osm.model.*
+import com.sun.org.apache.xerces.internal.dom.DeferredTextImpl
+import dev.itsu.osmparser.model.*
 import org.w3c.dom.Element
 import java.io.File
 import java.io.FileInputStream
@@ -15,6 +16,7 @@ class OSMParser {
     lateinit var copyRight: String
     lateinit var attribution: String
     lateinit var license: String
+    lateinit var bounds: Bounds
 
     private val nodes = mutableMapOf<Long, Node>()
     private val ways = mutableMapOf<Long, Way>()
@@ -26,15 +28,15 @@ class OSMParser {
         const val UNKNOWN_DOUBLE = 0.0
     }
 
-    fun parse(path: String) {
-        parse(File(path))
+    fun parse(path: String): OSMParser {
+        return parse(File(path))
     }
 
-    fun parse(file: File) {
-        parse(FileInputStream(file))
+    fun parse(file: File): OSMParser {
+        return parse(FileInputStream(file))
     }
 
-    fun parse(inputStream: InputStream) {
+    fun parse(inputStream: InputStream): OSMParser {
         try {
             val factory = DocumentBuilderFactory.newInstance()
             val document = factory.newDocumentBuilder().parse(inputStream)
@@ -52,9 +54,20 @@ class OSMParser {
             nodes = root.getElementsByTagName("way")
             for (i in 0 until nodes.length) processWay(nodes.item(i) as Element)
 
+            nodes = root.getElementsByTagName("bounds")
+            val node = nodes.item(0) as Element
+            bounds = Bounds(
+                    node.getAttribute("minlat").toDouble(),
+                    node.getAttribute("minlon").toDouble(),
+                    node.getAttribute("maxlat").toDouble(),
+                    node.getAttribute("maxlon").toDouble()
+            )
+
         } catch (ex: Exception) {
             ex.printStackTrace()
         }
+
+        return this
     }
 
     private fun processNode(element: Element) {
@@ -75,15 +88,11 @@ class OSMParser {
                         )
 
                 ).also {
-                    if (element.hasChildNodes()) {
-                        val child = element.childNodes
-                        var childElement: Element
-                        for (i in 0 until child.length) {
-                            childElement = if (child.item(i) is Element) child.item(i) as Element else return@also
-                            when (childElement.tagName) {
-                                "tag" -> it.tags.add(Tag(element.getAttribute("k"), element.getAttribute("v")))
-                            }
-                        }
+                    val children = element.getElementsByTagName("tag")
+                    var child: Element
+                    for (i in 0 until children.length) {
+                        child = children.item(i) as Element
+                        it.tags[child.getAttribute("k")] = Tag(child.getAttribute("k"), child.getAttribute("v"))
                     }
                 }
     }
@@ -102,16 +111,17 @@ class OSMParser {
                         )
 
                 ).also {
-                    if (element.hasChildNodes()) {
-                        val child = element.childNodes
-                        var childElement: Element
-                        for (i in 0 until child.length) {
-                            childElement = if (child.item(i) is Element) child.item(i) as Element else return@also
-                            when (childElement.tagName) {
-                                "tag" -> it.tags.add(Tag(element.getAttribute("k"), element.getAttribute("v")))
-                                "nd" -> it.nds.add(Nd(element.getAttribute("ref")?.toLongOrNull() ?: UNKNOWN_LONG))
-                            }
-                        }
+                    var children = element.getElementsByTagName("tag")
+                    var child: Element
+                    for (i in 0 until children.length) {
+                        child = children.item(i) as Element
+                        it.tags.put(child.getAttribute("k"), Tag(child.getAttribute("k"), child.getAttribute("v")))
+                    }
+
+                    children = element.getElementsByTagName("nd")
+                    for (i in 0 until children.length) {
+                        child = children.item(i) as Element
+                        it.nds.add(Nd(child.getAttribute("ref")?.toLongOrNull() ?: UNKNOWN_LONG))
                     }
                 }
     }

@@ -1,4 +1,4 @@
-package dev.itsu.urbandeveloper.osm.model
+package dev.itsu.osmparser.model
 
 data class Node(
         val id: Long,
@@ -9,5 +9,5 @@ data class Node(
         val user: User,
         val position: Pos
 ) {
-    var tags: MutableList<Tag> = mutableListOf()
+    var tags: MutableMap<String, Tag> = mutableMapOf()
 }

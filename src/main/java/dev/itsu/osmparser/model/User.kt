@@ -1,4 +1,4 @@
-package dev.itsu.urbandeveloper.osm.model
+package dev.itsu.osmparser.model
 
 data class User(
         val name: String,
